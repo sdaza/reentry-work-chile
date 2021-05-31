@@ -7,14 +7,33 @@
 
 library(data.table)
 library(lubridate)
+library(haven)
 
 # relative directory of the paper
 path_paper = "reports/paper-work-lifecourse/"
-
 source(paste0(path_paper, "src/utils.R"))
 
-# baseline variables
+# pre-incarceration job
+jobs = data.table(read_stata(paste0(path_paper, "data/empleo_precarcel.dta")))
 
+# 0 = no trabajo
+# 1 = cuenta propia informal
+# 2 = cuenta propia formal
+# 3 = dependiente informal
+# 4 = dependiente formal
+attr(jobs$trabajo_pc, "labels")
+jobs[, prejobs := trabajo_pc]
+jobs[trabajo_pc == 1, prejobs := 3]
+jobs[trabajo_pc == 2, prejobs := 4]
+jobs[trabajo_pc == 3, prejobs := 1]
+jobs[trabajo_pc == 4, prejobs := 2]
+
+table(jobs$trabajo_pc)
+labs = c("None", "Self-employed U", "Self-employed", "Under-the-table", "Employed")
+jobs[, prejobs := factor(prejobs, levels = 0:4, labs)]
+table(jobs$prejobs)
+
+# baseline variables
 bs = fread('output/bases/base_general.csv')
 setnames(bs, names(bs), tolower(names(bs)))
 bs = bs[reg_ola == 0 & reg_muestra == 1]
@@ -114,37 +133,7 @@ bs[, del_6_3 := del_6_3 / 30.5]
 
 bs[, total_previous_months_in_prison := apply(.SD, 1, sum, na.rm=TRUE),
     .SDcols = paste0('del_6_', 1:3)]
-
 table(bs$total_previous_months_in_prison)
-
-# add current time
-bs[, current_time_in_prison := interval(ymd(reg_fprivacion), ymd(reg_fegreso)) %/% months(1)]
-bs[, total_months_in_prison := apply(.SD, 1, sum, na.rm=TRUE),
-    .SDcols = c('total_previous_months_in_prison', 'current_time_in_prison')]
-
-table(bs$reg_fegreso)
-table(bs$reg_fprivacion)
-
-# report date of prison
-# remove missing using mid day and month
-bs[is.na(hdv_4_1), hdv_4_1 := 15]
-bs[is.na(hdv_4_2), hdv_4_2 := 7]
-
-bs[, report_date_prison := paste0(hdv_4_1, '-', hdv_4_2, '-', hdv_4_3)]
-
-bs[total_months_in_prison == 0, .(reg_folio, total_months_in_prison, del_6_1, del_6_2, del_6_3,
-                                  reg_fecha, reg_fprivacion, reg_fegreso, hdv_4_1, hdv_4_2, hdv_4_3,
-                                  report_date_prison)]
-
-bs[total_months_in_prison == 0, current_time_in_prison := interval(dmy(report_date_prison), ymd(reg_fecha)) %/% months(1)]
-bs[total_months_in_prison == 0, total_months_in_prison := apply(.SD, 1, sum, na.rm=TRUE),
-    .SDcols = c('total_previous_months_in_prison', 'current_time_in_prison')]
-
-bs[total_months_in_prison == 0, .(reg_folio, total_months_in_prison, del_6_1, del_6_2, del_6_3,
-                                  reg_fecha, reg_fprivacion, reg_fegreso, hdv_4_1, hdv_4_2, hdv_4_3,
-                                  report_date_prison)]
-
-hist(bs$total_months_in_prison)
 
 # mental health
 bs[, mental_health := scale(apply(.SD, 1, mean, na.rm = TRUE)),
@@ -155,7 +144,7 @@ setnames(bs, 'hij_1', 'nchildren')
 bs[, any_children := ifelse(nchildren > 0, 1, 0)]
 
 # early crime
-bs[, early_crime := ifelse(del_15 < 15, 1, 0)]
+bs[, early_crime := ifelse(del_15 <= 15, 1, 0)]
 table(bs$early_crime)
 
 # last sentence extension
@@ -221,14 +210,15 @@ bs = bs[, .(reg_folio, class, age, edu,
             self_efficacy, desire_change, previous_partner,
             previous_sentences, mental_health,
             drug_depabuse, sentence_length,
-            total_months_in_prison, family_conflict
+            family_conflict
     )]
 
 # center variables
+bs = merge(bs, jobs, by = "reg_folio", x.all = TRUE)
 cvars = c('age', 'sentence_length', 'nchildren', 'previous_sentences')
 bs[, paste0('c_', cvars) := lapply(.SD, scale, scale=FALSE), .SDcols = cvars]
 
 # save data.table
-saveRDS(bs, file = paste0(path_paper, "output/baseline_covariates.rds"))
+saveRDS(bs, file = paste0(path_paper, "output/data/baseline_covariates.rds"))
 
 
