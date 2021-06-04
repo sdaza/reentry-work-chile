@@ -30,10 +30,89 @@ cluster_labels_jobs_se = cluster_labels[[1]]
 cluster_labels_job_crime = cluster_labels[[2]]
 
 # discrepancy analysis
-seq_data_jobs_se = readRDS(paste0(path_paper, "output/data/seq_data_job.rds"))
-seq_data_job_se_distance  = readRDS(paste0(path_paper, "output/data/seq_data_job_distance.rds"))
+seq_data_jobs = readRDS(paste0(path_paper, "output/data/seq_data_jobs.rds"))
+seq_data_jobs_se = readRDS(paste0(path_paper, "output/data/seq_data_jobs_se.rds"))
+seq_data_job_se_distance  = readRDS(paste0(path_paper, "output/data/seq_data_jobs_se_distance.rds"))
 seq_data_job_crime = readRDS(paste0(path_paper, "output/data/seq_data_job_crime.rds"))
 seq_data_job_crime_distance = readRDS(paste0(path_paper, "output/data/seq_data_job_crime_distance.rds"))
+
+# explore sequences
+
+labs = c("None", "Self-employed U", "Self-employed", "Employed U", "Employed")
+exploreSequences(seq_data_jobs, labs)
+
+labs = c("None", "Crime", "Informal", "Informal-Crime", 
+    "Formal", "Formal-Crime")
+exploreSequences(seq_data_job_crime, labs)
+
+temp = data.table(seq_data_job_crime)
+temp[, anyjob := apply(.SD, 1, function (x) any(x %in% c(2, 4))), .SDcols = 1:12]
+temp[, anycrime := apply(.SD, 1, function (x) any(x %in% c(1))), .SDcols = 1:12]
+temp[, jobcrime := apply(.SD, 1, function (x) any(x %in% c(3, 5))), .SDcols = 1:12]
+temp[, anyjobcrime := apply(.SD, 1, sum), .SDcols = c("anyjob", "anycrime") ]
+temp[, du := ifelse(anyjobcrime == 2 | jobcrime, 1, 0)]
+
+temp[, anyinformal := apply(.SD, 1, function (x) any(x %in% c(2))), .SDcols = 1:12]
+temp[, informalcrime := apply(.SD, 1, function (x) any(x %in% c(3))), .SDcols = 1:12]
+temp[, anyinformalcrime := apply(.SD, 1, sum), .SDcols = c("anyinformal", "anycrime") ]
+
+temp[, anyformal := apply(.SD, 1, function (x) any(x %in% c(4))), .SDcols = 1:12]
+temp[, formalcrime := apply(.SD, 1, function (x) any(x %in% c(5))), .SDcols = 1:12]
+temp[, anyformalcrime := apply(.SD, 1, sum), .SDcols = c("anyinformal", "anycrime") ]
+
+temp[, du := ifelse(anyjobcrime == 2 | jobcrime, 1, 0)]
+temp[, duinformal := ifelse(anyinformalcrime == 2 | informalcrime, 1, 0)]
+temp[, duformal := ifelse(anyformalcrime == 2 | formalcrime, 1, 0)]
+
+prop.table(table(temp$du))
+prop.table(table(temp$duinformal))
+prop.table(table(temp$duformal))
+
+temp[du == 1]
+prop.table(table(temp$du, temp$duinformal), 1)
+prop.table(table(temp$du, temp$duformal), 1)
+
+temp[, cluster := clusters$cluster_job_crime_4]
+
+prop.table(table(temp$cluster, temp$du), 1)
+
+# explore clusters
+table(clusters$cluster_job_4)
+labs = c("None", "Self-employed", "Under-the-table", "Formal")
+exploreCluster(seq_data_jobs_se, 
+    selected_cluster = "Formal", 
+    cluster_vector = clusters$cluster_job_4, 
+    columns = labs, 
+    state = "Formal")
+
+table(clusters$cluster_job_crime_4)
+labs = c("None", "Crime", "Informal", "Informal-Crime", "Formal", "Formal-Crime")
+temp = exploreCluster(seq_data_job_crime, 
+    selected_cluster = "Formal", 
+    cluster_vector = clusters$cluster_job_crime_4, 
+    columns = labs,
+    state = "Formal",
+    return_table = TRUE)
+
+temp = data.table(seq_data_job_crime)
+temp[, anyjob := apply(.SD, 1, function (x) any(x %in% c(2, 4))), .SDcols = 1:12]
+temp[, anycrime := apply(.SD, 1, function (x) any(x %in% c(1))), .SDcols = 1:12]
+temp[, jobcrime := apply(.SD, 1, function (x) any(x %in% c(3, 5))), .SDcols = 1:12]
+temp[, anyjobcrime := apply(.SD, 1, sum), .SDcols = c("anyjob", "anycrime") ]
+temp[, du := ifelse(anyjobcrime == 2 | jobcrime, 1, 0)]
+temp[, cluster := clusters$cluster_job_crime_4 ]
+
+prop.table(table(temp[cluster == "Formal", du]))
+
+temp[, working_crime := ifelse(Crime > 0 | get("Informal-Crime") > 0 | get("Formal-Crime") > 0, 1, 0)]
+prop.table(table(temp$working_crime))
+temp[, anycrime := apply(.SD, 1, function(x) ifelse(sum(x) > 0, 1, 0)), 
+    .SDcols = names(temp) %like% "Crime"]
+prop.table(table(temp$anycrime))
+temp[, anyjob := apply(.SD, 1, function(x) ifelse(sum(x) > 0, 1, 0)), 
+    .SDcols = names(temp) %like% "Informal|Formal"]
+prop.table(table(temp$anyjob))
+
 
 # jobs
 st = seqtree(seq_data_jobs_se ~ age + h_school +

@@ -23,14 +23,14 @@ jobs = data.table(read_stata(paste0(path_paper, "data/empleo_precarcel.dta")))
 # 4 = dependiente formal
 attr(jobs$trabajo_pc, "labels")
 jobs[, prejobs := trabajo_pc]
-jobs[trabajo_pc == 1, prejobs := 3]
-jobs[trabajo_pc == 2, prejobs := 4]
+jobs[trabajo_pc == 1, prejobs := 2]
+jobs[trabajo_pc == 2, prejobs := 3]
 jobs[trabajo_pc == 3, prejobs := 1]
-jobs[trabajo_pc == 4, prejobs := 2]
+jobs[trabajo_pc == 4, prejobs := 3]
 
 table(jobs$trabajo_pc)
-labs = c("None", "Self-employed U", "Self-employed", "Under-the-table", "Employed")
-jobs[, prejobs := factor(prejobs, levels = 0:4, labs)]
+labs = c("None", "Self-employed", "Under-the-table", "Formal")
+jobs[, prejobs := factor(prejobs, levels = 0:3, labs)]
 table(jobs$prejobs)
 
 # baseline variables

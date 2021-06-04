@@ -13,21 +13,21 @@ library(TraMineR)
 library(TraMineRextras)
 library(xtable)
 
+
 # set seed to reproduce imputation
 set.seed(210013)
 
 # relative directory of the paper
 path_paper = "reports/paper-work-lifecourse/"
 path_manuscript = "reports/paper-work-lifecourse/manuscript/"
-
 source(paste0(path_paper, "src/utils.R"))
 source("src/calendario/utils.R")
-
-cluster_membership = data.table::copy(unique(dat[, .(reg_folio)]))
 
 dat = readRDS(file = paste0(path_paper, "output/data/data_for_sequence_analysis.rds"))
 covs = readRDS(file = paste0(path_paper, "output/data/baseline_covariates.rds"))
 n = nrow(covs)
+
+cluster_membership = data.table::copy(unique(dat[, .(reg_folio)]))
 
 # colors 
 colors5 = c("#f0f9e8", "#bae4bc", "#7bccc4", "#43a2ca", "#0868ac")
@@ -50,6 +50,7 @@ seqstatd(seq_data_anyjob)
 seqmeant(seq_data_anyjob, prop = TRUE, serr = TRUE)
 seqmeant(seq_data_anyjob, prop = FALSE, serr = TRUE)
 
+
 # all job categories and plots
 labs = c("None", "Self-employed U", "Self-employed", "Employed U", "Employed")
 seq_data_jobs = create_sequences(
@@ -59,6 +60,7 @@ seq_data_jobs = create_sequences(
     colors = colors5
 )
 seqstatd(seq_data_jobs)
+seqmeant(seq_data_jobs, prop = TRUE, serr = TRUE)
 
 savepdf(paste0(path_paper, "output/plots/seq_dist_jobs"))
     seqdplot(seq_data_jobs,
@@ -72,13 +74,17 @@ file.copy(paste0(path_paper, "output/plots/seq_dist_jobs.pdf"),
     paste0(path_manuscript, "figures/"), recursive = TRUE)
 
 # redefine job categories
+# 1 = cuenta propia informal
+# 2 = cuenta propia formal
+# 3 = dependiente informal
+# 4 = dependiente formal
 dat[job == 1, independent_job := 1]
-dat[job == 2, independent_job := 1]
+dat[job == 2, independent_job := 3]
 dat[job == 3, independent_job := 2]
 dat[job == 4, independent_job := 3]
 dat[job == 0, independent_job := 0]
 table(dat$independent_job)
-labs = c("None", "Self-employed", "Under-the-table", "Employed")
+labs = c("None", "Self-employed", "Under-the-table", "Formal")
 
 seq_data_jobs_se = create_sequences(
     data = dat,
@@ -89,9 +95,9 @@ seq_data_jobs_se = create_sequences(
 
 # create plot time in state by previous jobs
 group = as.character(covs$prejobs)
-group[group == "Self-employed U"] = "Self-employed"
-labs = c("None", "Self-employed", "Under-the-table", "Employed")
-glabs = c("None", "Self-employed", "Under-the-table", "Employed")
+# group[group == "Self-employed U"] = "Self-employed"
+labs = c("None", "Self-employed", "Under-the-table", "Formal")
+glabs = c("None", "Self-employed", "Under-the-table", "Formal")
 time = timeSpentGroup(seq_data_jobs_se, groupv = group, prop = FALSE,
     states = 0:3, sample = 1000, glabels = glabs, slabels = labs)
 
@@ -120,7 +126,7 @@ tab[[1]] =  "
  \\addlinespace
  \\cmidrule(lr){3-6} 
 \\addlinespace
- & Total & None & Self-employed & Under-the-table & Employed \\\\
+ & Total & None & Self-employed & Under-the-table & Formal \\\\
 Job after release  & \\multicolumn{1}{l}{(N=207)} & \\multicolumn{1}{l}{(N=105)} & \\multicolumn{1}{l}{(N=62)}  &
 \\multicolumn{1}{l}{(N=16)} & \\multicolumn{1}{l}{(N=24)} \\\\
 \\addlinespace
@@ -170,16 +176,16 @@ file.copy(paste0(path_paper, "output/tables/cluster_quality_job.tex"),
 plot(benchmark_clusters, stat = c("ASW", "HG", "PBC"))
 
 # create plots (self-employed = se)
-
 cl_jobs_se_4 = create_clusters(seq_data_jobs_se, nclusters = 4,
-    method = "HAM"
+    method = "HAM",
+    norm_distance = "auto"
 )
 cluster_vector = cl_jobs_se_4[["c4"]][[1]]
 
-cluster_levels_jobs_se = c("Unemployed", "Self-employed", "Under-the-table", "Employed")
+cluster_levels_jobs_se = c("Unemployed", "Self-employed", "Under-the-table", "Formal")
 vorder = table(cluster_vector)
 cluster_labels_jobs_se = c(NA, NA, NA, NA)
-cluster_labels_jobs_se[which(vorder == min(vorder))] = "Employed"
+cluster_labels_jobs_se[which(vorder == min(vorder))] = "Formal"
 cluster_labels_jobs_se[which(vorder == max(vorder))] = "Unemployed"
 torder = vorder[-c(
     which(vorder == min(vorder)), 
@@ -192,9 +198,13 @@ if (torder[1] > torder[2]) {
 
 cl_jobs_se_4 = create_clusters(seq_data_jobs_se, nclusters = 4,
     method = "HAM",
+    norm_distance = "auto",
     cluster_labels = cluster_labels_jobs_se,
     cluster_levels = cluster_levels_jobs_se,
 )
+
+cluster_vector = cl_jobs_se_4[["c4"]][[1]]
+n_clusters = c(n, table(cluster_vector))
 
 create_plots(seq_data_jobs_se, cl_jobs_se_4[[1]],
     paste0(path_paper, "output/plots/seq_job_se_4_clusters"),
@@ -203,10 +213,12 @@ create_plots(seq_data_jobs_se, cl_jobs_se_4[[1]],
 file.copy(paste0(path_paper, "output/plots/seq_job_se_4_clusters.pdf"),
     paste0(path_manuscript, "figures/"), recursive = TRUE)
 
+cluster_membership[, cluster_job_4 := cluster_vector]
+
 # create table with stats across clusters ::::::::::::::::::::::
 cluster_vector = cl_jobs_se_4[["c4"]][[1]]
-slabels =  c("None", "Self-employed", "Under-the-table", "Employed")
-glabels = c("Unemployed", "Self-employed", "Under-the-table", "Employed")
+slabels =  c("None", "Self-employed", "Under-the-table", "Formal")
+glabels = c("Unemployed", "Self-employed", "Under-the-table", "Formal")
 table(cluster_vector)
 
 des_vars = c("age", "h_school", "nchildren", "drug_depabuse", "early_crime", 
@@ -243,13 +255,16 @@ out2 = gsub("(.+\\\\\\\\\\s\\n\\s+\\\\hline\\n)(.+)(\\s+\\\\hline\\n.+)", "\\2",
 addtorow = list()
 addtorow$pos = as.list(c(4, 8))
 addtorow$command = as.vector(rep("\\addlinespace[12pt] \n", 3))
-# out3 = print(xtable(dts[[3]]),  add.to.row = addtorow, include.rownames = FALSE, 
-#     sanitize.text.function = function(x){x})
-# out3 = gsub("(.+\\\\\\\\\\s\\n\\s+\\\\hline\\n)(.+)(\\s+\\\\hline\\n.+)", "\\2", out3)
 
 # table list
 tab = list()
-tab[[1]] =  "
+
+tabn = paste0("& \\multicolumn{1}{l}{(N=", n_clusters[1], ")} & \\multicolumn{1}{l}{(N=", n_clusters[2], ")} 
+        & \\multicolumn{1}{l}{(N=", n_clusters[3], ")} & \\multicolumn{1}{l}{(N=", n_clusters[4], ")} 
+        & \\multicolumn{1}{l}{(N=", n_clusters[5], ")} \\\\"
+)
+
+tab[[1]] =  paste0("
 \\begin{table}[htp]
 \\scriptsize
 \\caption{Covariates by job cluster}
@@ -264,14 +279,14 @@ tab[[1]] =  "
 \\addlinespace
 \\cmidrule(lr){3-6} 
 \\addlinespace
-& \\multicolumn{1}{l}{Total} & \\multicolumn{1}{l}{Unemployed} & \\multicolumn{1}{l}{Self-employed} & \\multicolumn{1}{l}{Under-the-table} & \\multicolumn{1}{l}{Employed} \\\\
-& \\multicolumn{1}{l}{(N=207)} & \\multicolumn{1}{l}{(N=121)} & \\multicolumn{1}{l}{(N=47)} & \\multicolumn{1}{l}{(N=22)} & \\multicolumn{1}{l}{(N=17)} \\\\
-\\addlinespace[8pt]
+& \\multicolumn{1}{l}{Total} & \\multicolumn{1}{l}{Unemployed} & \\multicolumn{1}{l}{Self-employed} & \\multicolumn{1}{l}{Under-the-table} & \\multicolumn{1}{l}{Formal} \\\\", 
+tabn, 
+"\\addlinespace[8pt]
 \\hline
 \\addlinespace[12pt]
 \\multicolumn{6}{l}{\\textbf{Time spent on job (months)}} \\\\
 \\addlinespace
-"
+")
 
 tab[[2]] = out1
 tab[[3]] = "\\addlinespace[12pt]
@@ -299,7 +314,7 @@ file.copy(paste0(path_paper, "output/tables/tab_cluster_job.tex"),
   paste0(path_manuscript,  "tables/"), recursive = TRUE)
 
 # transition table
-labs = c("None", "Self-employed", "Under-the-table", "Employed")
+labs = c("None", "Self-employed", "Under-the-table", "Formal")
 tmat = transMat(data.table(seq_data_jobs_se), labels = labs, states = 0:3) 
 mmat = matrix(tmat$Est, ncol = 4, nrow = 4, byrow = TRUE)
 rownames(mmat) = labs
@@ -401,24 +416,46 @@ file.copy(paste0(path_paper, "output/tables/cluster_quality_job_crime.tex"),
 plot(benchmark_clusters, stat = c("ASW", "HG", "PBC"))
 
 # 4-cluster solution
-cluster_labels_job_crime = c("Formal", "Informal", "Unemployed", "Offending")
 # cluster_labels_job_crime = cluster_levels_job_crime
 cluster_levels_job_crime = c("Unemployed", "Offending", "Informal", "Formal")
 
 cl_job_crime_4 = create_clusters(seq_data_job_crime,
     nclusters = 4,
     method = "HAM",
-    norm_distance = "auto",
-    cluster_labels = cluster_labels_job_crime,
-    cluster_levels = cluster_levels_job_crime
+    norm_distance = "auto"
 )
+cluster_vector = cl_job_crime_4[["c4"]][[1]]
+
+vorder = table(cluster_vector)
+cluster_labels_job_crime = c(NA, NA, NA, NA)
+cluster_labels_job_crime[which(vorder == min(vorder))] = "Formal"
+cluster_labels_job_crime[which(vorder == max(vorder))] = "Unemployed"
+torder = vorder[-c(
+    which(vorder == min(vorder)), 
+    which(vorder == max(vorder)))]
+if (torder[1] > torder[2]) {
+    cluster_labels_job_crime[which(vorder %in% torder)] = c("Informal", "Offending")
+} else {
+    cluster_labels_job_crime[which(vorder %in% torder)] = c("Offending", "Informal")
+}
+
+cl_job_crime_4 = create_clusters(seq_data_job_crime,
+    nclusters = 4,
+    method = "HAM",
+    norm_distance = "auto", 
+    cluster_labels = cluster_labels_job_crime,
+    cluster_levels = cluster_levels_job_crime,
+)
+
+cluster_vector = cl_job_crime_4[["c4"]][[1]]
+n_clusters = c(n, table(cluster_vector))
 
 create_plots(seq_data_job_crime, cl_job_crime_4[[1]],
     paste0(path_paper, "output/plots/seq_job_crime_4_clusters"),
     order = "sql")
 file.copy(paste0(path_paper, "output/plots/seq_job_crime_4_clusters.pdf"),
     paste0(path_manuscript, "figures/"), recursive = TRUE)
-cluster_membership[, cluster_job_crime_4 := cl_job_crime_4[["c4"]][[1]]]
+cluster_membership[, cluster_job_crime_4 := cluster_vector]
 
 # explore clusters 
 select_cluster = "Formal"
@@ -461,7 +498,13 @@ addtorow$command = as.vector(rep("\\addlinespace[12pt] \n", 5))
 
 # table list
 tab = list()
-tab[[1]] =  "
+
+tabn = paste0("& \\multicolumn{1}{l}{(N=", n_clusters[1], ")} & \\multicolumn{1}{l}{(N=", n_clusters[2], "} 
+        & \\multicolumn{1}{l}{(N=", n_clusters[3], ")} & \\multicolumn{1}{l}{(N=", n_clusters[4], ")} 
+        & \\multicolumn{1}{l}{(N=", n_clusters[5], ")} \\\\"
+)
+
+tab[[1]] =  paste0("
 \\renewcommand{\\arraystretch}{0.8}
 \\begin{scriptsize}
 {\\setlength{\\tabcolsep}{5pt}
@@ -474,14 +517,14 @@ tab[[1]] =  "
 \\addlinespace
 \\cmidrule(lr){3-6} 
 \\addlinespace
-& \\multicolumn{1}{l}{Total} & \\multicolumn{1}{l}{Unemployed} & \\multicolumn{1}{l}{Offenders} & \\multicolumn{1}{l}{Informal} & \\multicolumn{1}{l}{Formal} \\\\
-& \\multicolumn{1}{l}{(N=207)} & \\multicolumn{1}{l}{(N=68)} & \\multicolumn{1}{l}{(N=54)} & \\multicolumn{1}{l}{(N=48)} & \\multicolumn{1}{l}{(N=37)} \\\\
-\\addlinespace[8pt]
+& \\multicolumn{1}{l}{Total} & \\multicolumn{1}{l}{Unemployed} & \\multicolumn{1}{l}{Offenders} & \\multicolumn{1}{l}{Informal} & \\multicolumn{1}{l}{Formal} \\\\", 
+tabn, 
+"\\addlinespace[8pt]
 \\hline
 \\addlinespace[12pt]
 \\multicolumn{6}{l}{\\textbf{Time spent on job (months)}} \\\\
-\\addlinespace
-"
+\\addlinespace"
+)
 
 tab[[2]] = out1
 tab[[3]] = "\\addlinespace[12pt]
@@ -579,9 +622,10 @@ saveRDS(list(cluster_levels_jobs_se, cluster_levels_job_crime),
     file = paste0(path_paper, "output/data/cluster_labels.rds"))
 saveRDS(dat[, lapply(.SD, getMax), reg_folio, .SDcols = ccovs],
     file = paste0(path_paper, "output/data/calendar_covs.rds"))
-saveRDS(seq_data_jobs_se, file = paste0(path_paper, "output/data/seq_data_job.rds"))
+saveRDS(seq_data_jobs, file = paste0(path_paper, "output/data/seq_data_jobs.rds"))
+saveRDS(seq_data_jobs_se, file = paste0(path_paper, "output/data/seq_data_jobs_se.rds"))
 saveRDS(seq_data_jobs_se_distance,
-    file = paste0(path_paper, "output/data/seq_data_job_distance.rds"))
+    file = paste0(path_paper, "output/data/seq_data_jobs_se_distance.rds"))
 saveRDS(seq_data_job_crime,
     file = paste0(path_paper, "output/data/seq_data_job_crime.rds"))
 saveRDS(seq_data_job_crime_distance,

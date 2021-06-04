@@ -264,7 +264,7 @@ ciProp = function(dat, variable, sample = 1000, remove_missing = TRUE) {
         m = c(m, mean(vs))
     }
 
-    bm = mean(m)
+    bm = quantile(m, 0.50)
     lo = quantile(m, 0.025)
     hi = quantile(m, 0.975)
     vt = c(bm, lo, hi)
@@ -420,5 +420,43 @@ timeSpentGroup = function(seq, groupv = NULL, glabels = NULL, slabels = NULL,
     if (!is.null(groupv)) tab = tab[, c("State", "Total", glabels), with = FALSE]
     tab[order(match(State, slabels))]
 }
+
+
+# explore clusters
+exploreSequences = function(seq_data, labs) {
+    print("::::::: states ::::::::")
+    print(labs)
+    print("::::::: Overall state frequencies :::::::")
+    print(seqstatf(seq_data))
+    print("::::::: State frequencies by month :::::::")
+    print(seqstatd(seq_data))
+    print("::::::: Time spent on states :::::::")
+    print(seqmeant(seq_data))
+}
+
+
+exploreCluster = function(seq_data, selected_cluster, cluster_vector, columns, 
+    state, return_table = FALSE) {
+    temp = data.table(
+        by(seq_data,
+            cluster_vector,
+            seqistatd)[[selected_cluster]]
+    )
+    setnames(temp, names(temp), columns)
+    print("::::::: Overall state frequencies :::::::")
+    print(by(seq_data, cluster_vector, seqstatf)[[selected_cluster]])
+    print("::::::: State frequencies by month :::::::")
+    print(by(seq_data, cluster_vector, seqstatd)[[selected_cluster]])
+    print("::::::: Time spent on states :::::::")
+    print(by(seq_data, cluster_vector, seqmeant, prop = FALSE)[[selected_cluster]])
+    print(paste0("::::::: Proportion time spent in state ", state, " :::::::"))
+    print(prop.table(table(temp[[state]])))
+    if (return_table) return(temp)
+}
+
+
+
+
+
 
 
