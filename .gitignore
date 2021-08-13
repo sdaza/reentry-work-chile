@@ -7,6 +7,7 @@
 *.rds
 *.csv
 *.xlsx
+*.dta
 /src/stata
 renv/library
 renv/.gitignore

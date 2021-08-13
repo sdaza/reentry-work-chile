@@ -113,12 +113,12 @@ temp[, anyjob := apply(.SD, 1, function(x) ifelse(sum(x) > 0, 1, 0)),
     .SDcols = names(temp) %like% "Informal|Formal"]
 prop.table(table(temp$anyjob))
 
-
+dat
 # jobs
 st = seqtree(seq_data_jobs_se ~ age + h_school +
-    any_previous_work + nchildren + previous_sentences +
+    any_previous_work + work_hardness + nchildren + previous_sentences +
     drug_depabuse + sentence_length + anyprison,
-    data = dat, R = 10000, diss = seq_data_jobs_se_distance,
+    data = dat, R = 10000, diss = seq_data_job_se_distance,
     weight.permutation = "diss",
     min.size = 0.05,
     max.depth = 5)
@@ -129,8 +129,8 @@ file.copy(paste0(path_paper, "output/plots/reg_tree_job.png"),
     paste0(path_manuscript, "figures/"), recursive = TRUE)
 
 # multifactor table
-job.mfac = dissmfacw(seq_data_jobs_se_distance ~ age + h_school +
-    any_previous_work + nchildren +
+job.mfac = dissmfacw(seq_data_job_se_distance ~ age + h_school +
+    any_previous_work + work_hardness + nchildren +
     previous_sentences +
     drug_depabuse + sentence_length + anyprison,
     data = dat, R = 1000)
