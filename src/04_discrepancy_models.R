@@ -14,8 +14,8 @@ library(data.table)
 library(hash)
 
 # relative directory of the paper
-path_paper = "reports/paper-work-lifecourse/"
-path_manuscript = "reports/paper-work-lifecourse/manuscript/"
+path_paper = "reports/paper-work-crime/"
+path_manuscript = "reports/paper-work-crime/manuscript/"
 source(paste0(path_paper, "src/utils.R"))
 
 # load data
@@ -36,96 +36,96 @@ seq_data_job_se_distance  = readRDS(paste0(path_paper, "output/data/seq_data_job
 seq_data_job_crime = readRDS(paste0(path_paper, "output/data/seq_data_job_crime.rds"))
 seq_data_job_crime_distance = readRDS(paste0(path_paper, "output/data/seq_data_job_crime_distance.rds"))
 
-# explore sequences
+# # explore sequences
 
-labs = c("None", "Self-employed U", "Self-employed", "Employed U", "Employed")
-exploreSequences(seq_data_jobs, labs)
+# labs = c("None", "Self-employed U", "Self-employed", "Employed U", "Employed")
+# exploreSequences(seq_data_jobs, labs)
 
-labs = c("None", "Crime", "Informal", "Informal-Crime", 
-    "Formal", "Formal-Crime")
-exploreSequences(seq_data_job_crime, labs)
+# labs = c("None", "Crime", "Informal", "Informal-Crime", 
+#     "Formal", "Formal-Crime")
+# exploreSequences(seq_data_job_crime, labs)
 
-temp = data.table(seq_data_job_crime)
-temp[, anyjob := apply(.SD, 1, function (x) any(x %in% c(2, 4))), .SDcols = 1:12]
-temp[, anycrime := apply(.SD, 1, function (x) any(x %in% c(1))), .SDcols = 1:12]
-temp[, jobcrime := apply(.SD, 1, function (x) any(x %in% c(3, 5))), .SDcols = 1:12]
-temp[, anyjobcrime := apply(.SD, 1, sum), .SDcols = c("anyjob", "anycrime") ]
-temp[, du := ifelse(anyjobcrime == 2 | jobcrime, 1, 0)]
+# temp = data.table(seq_data_job_crime)
+# temp[, anyjob := apply(.SD, 1, function (x) any(x %in% c(2, 4))), .SDcols = 1:12]
+# temp[, anycrime := apply(.SD, 1, function (x) any(x %in% c(1))), .SDcols = 1:12]
+# temp[, jobcrime := apply(.SD, 1, function (x) any(x %in% c(3, 5))), .SDcols = 1:12]
+# temp[, anyjobcrime := apply(.SD, 1, sum), .SDcols = c("anyjob", "anycrime") ]
+# temp[, du := ifelse(anyjobcrime == 2 | jobcrime, 1, 0)]
 
-temp[, anyinformal := apply(.SD, 1, function (x) any(x %in% c(2))), .SDcols = 1:12]
-temp[, informalcrime := apply(.SD, 1, function (x) any(x %in% c(3))), .SDcols = 1:12]
-temp[, anyinformalcrime := apply(.SD, 1, sum), .SDcols = c("anyinformal", "anycrime") ]
+# temp[, anyinformal := apply(.SD, 1, function (x) any(x %in% c(2))), .SDcols = 1:12]
+# temp[, informalcrime := apply(.SD, 1, function (x) any(x %in% c(3))), .SDcols = 1:12]
+# temp[, anyinformalcrime := apply(.SD, 1, sum), .SDcols = c("anyinformal", "anycrime") ]
 
-temp[, anyformal := apply(.SD, 1, function (x) any(x %in% c(4))), .SDcols = 1:12]
-temp[, formalcrime := apply(.SD, 1, function (x) any(x %in% c(5))), .SDcols = 1:12]
-temp[, anyformalcrime := apply(.SD, 1, sum), .SDcols = c("anyinformal", "anycrime") ]
+# temp[, anyformal := apply(.SD, 1, function (x) any(x %in% c(4))), .SDcols = 1:12]
+# temp[, formalcrime := apply(.SD, 1, function (x) any(x %in% c(5))), .SDcols = 1:12]
+# temp[, anyformalcrime := apply(.SD, 1, sum), .SDcols = c("anyinformal", "anycrime") ]
 
-temp[, du := ifelse(anyjobcrime == 2 | jobcrime, 1, 0)]
-temp[, duinformal := ifelse(anyinformalcrime == 2 | informalcrime, 1, 0)]
-temp[, duformal := ifelse(anyformalcrime == 2 | formalcrime, 1, 0)]
+# temp[, du := ifelse(anyjobcrime == 2 | jobcrime, 1, 0)]
+# temp[, duinformal := ifelse(anyinformalcrime == 2 | informalcrime, 1, 0)]
+# temp[, duformal := ifelse(anyformalcrime == 2 | formalcrime, 1, 0)]
 
-prop.table(table(temp$du))
-prop.table(table(temp$duinformal))
-prop.table(table(temp$duformal))
+# prop.table(table(temp$du))
+# prop.table(table(temp$duinformal))
+# prop.table(table(temp$duformal))
 
-temp[du == 1]
-prop.table(table(temp$du, temp$duinformal), 1)
-prop.table(table(temp$du, temp$duformal), 1)
+# temp[du == 1]
+# prop.table(table(temp$du, temp$duinformal), 1)
+# prop.table(table(temp$du, temp$duformal), 1)
 
-temp[, cluster := clusters$cluster_job_crime_4]
+# temp[, cluster := clusters$cluster_job_crime_4]
 
-prop.table(table(temp$cluster, temp$du), 1)
+# prop.table(table(temp$cluster, temp$du), 1)
 
-# explore clusters
-table(clusters$cluster_job_4)
-labs = c("None", "Self-employed", "Under-the-table", "Formal")
-exploreCluster(seq_data_jobs_se, 
-    selected_cluster = "Formal", 
-    cluster_vector = clusters$cluster_job_4, 
-    columns = labs, 
-    state = "Formal")
+# # explore clusters
+# table(clusters$cluster_job_4)
+# labs = c("None", "Self-employed", "Under-the-table", "Formal")
+# exploreCluster(seq_data_jobs_se, 
+#     selected_cluster = "Formal", 
+#     cluster_vector = clusters$cluster_job_4, 
+#     columns = labs, 
+#     state = "Formal")
 
-table(clusters$cluster_job_crime_4)
-labs = c("None", "Crime", "Informal", "Informal-Crime", "Formal", "Formal-Crime")
-temp = exploreCluster(seq_data_job_crime, 
-    selected_cluster = "Formal", 
-    cluster_vector = clusters$cluster_job_crime_4, 
-    columns = labs,
-    state = "Formal",
-    return_table = TRUE)
+# table(clusters$cluster_job_crime_4)
+# labs = c("None", "Crime", "Informal", "Informal-Crime", "Formal", "Formal-Crime")
+# temp = exploreCluster(seq_data_job_crime, 
+#     selected_cluster = "Formal", 
+#     cluster_vector = clusters$cluster_job_crime_4, 
+#     columns = labs,
+#     state = "Formal",
+#     return_table = TRUE)
 
-temp = data.table(seq_data_job_crime)
-temp[, anyjob := apply(.SD, 1, function (x) any(x %in% c(2, 4))), .SDcols = 1:12]
-temp[, anycrime := apply(.SD, 1, function (x) any(x %in% c(1))), .SDcols = 1:12]
-temp[, jobcrime := apply(.SD, 1, function (x) any(x %in% c(3, 5))), .SDcols = 1:12]
-temp[, anyjobcrime := apply(.SD, 1, sum), .SDcols = c("anyjob", "anycrime") ]
-temp[, du := ifelse(anyjobcrime == 2 | jobcrime, 1, 0)]
-temp[, cluster := clusters$cluster_job_crime_4 ]
+# temp = data.table(seq_data_job_crime)
+# temp[, anyjob := apply(.SD, 1, function (x) any(x %in% c(2, 4))), .SDcols = 1:12]
+# temp[, anycrime := apply(.SD, 1, function (x) any(x %in% c(1))), .SDcols = 1:12]
+# temp[, jobcrime := apply(.SD, 1, function (x) any(x %in% c(3, 5))), .SDcols = 1:12]
+# temp[, anyjobcrime := apply(.SD, 1, sum), .SDcols = c("anyjob", "anycrime") ]
+# temp[, du := ifelse(anyjobcrime == 2 | jobcrime, 1, 0)]
+# temp[, cluster := clusters$cluster_job_crime_4 ]
 
-prop.table(table(temp[cluster == "Formal", du]))
+# prop.table(table(temp[cluster == "Formal", du]))
 
-temp[, working_crime := ifelse(Crime > 0 | get("Informal-Crime") > 0 | get("Formal-Crime") > 0, 1, 0)]
-prop.table(table(temp$working_crime))
-temp[, anycrime := apply(.SD, 1, function(x) ifelse(sum(x) > 0, 1, 0)), 
-    .SDcols = names(temp) %like% "Crime"]
-prop.table(table(temp$anycrime))
-temp[, anyjob := apply(.SD, 1, function(x) ifelse(sum(x) > 0, 1, 0)), 
-    .SDcols = names(temp) %like% "Informal|Formal"]
-prop.table(table(temp$anyjob))
+# temp[, working_crime := ifelse(Crime > 0 | get("Informal-Crime") > 0 | get("Formal-Crime") > 0, 1, 0)]
+# prop.table(table(temp$working_crime))
+# temp[, anycrime := apply(.SD, 1, function(x) ifelse(sum(x) > 0, 1, 0)), 
+#     .SDcols = names(temp) %like% "Crime"]
+# prop.table(table(temp$anycrime))
+# temp[, anyjob := apply(.SD, 1, function(x) ifelse(sum(x) > 0, 1, 0)), 
+#     .SDcols = names(temp) %like% "Informal|Formal"]
+# prop.table(table(temp$anyjob))
 
-dat
 # jobs
 st = seqtree(seq_data_jobs_se ~ age + h_school +
     any_previous_work + work_hardness + nchildren + previous_sentences +
-    drug_depabuse + sentence_length + anyprison,
+    drug_depabuse + sentence_length + anyprison + shealth + hardship + 
+    kid_minors + first_time_prison,
     data = dat, R = 10000, diss = seq_data_job_se_distance,
     weight.permutation = "diss",
     min.size = 0.05,
     max.depth = 5)
 
-seqtreedisplay(st, type = "d", border = NA,
-    filename = paste0(path_paper, "output/plots/reg_tree_job.png"))
-file.copy(paste0(path_paper, "output/plots/reg_tree_job.png"),
+seqtreedisplay(st, type = "d", border = NA,  image.format = "pdf",
+    filename = paste0(path_paper, "output/plots/reg_tree_job.pdf"))
+file.copy(paste0(path_paper, "output/plots/reg_tree_job.pdf"),
     paste0(path_manuscript, "figures/"), recursive = TRUE)
 
 # multifactor table
@@ -138,23 +138,29 @@ job.mfac$mfac[order(-job.mfac$mfac$PseudoR2), ]
 
 # multifactor table
 job.mfac = dissmfacw(seq_data_job_se_distance ~ age + h_school +
-                          any_previous_work + nchildren +
-                          previous_sentences +
+                          any_previous_work + first_time_prison+
+                          previous_sentences + hardship + shealth + 
+                          kid_minors +
                           drug_depabuse + sentence_length +
                           anyprison,
                      data = dat, R = 1000)
+
 
 tt = data.table(job.mfac$mfac[order(-job.mfac$mfac$PseudoR2), ])
 
 total = tt[Variable == "Total"]
 rest = tt[Variable != "Total"]
 
-name_vars = c("age", "h_school", "nchildren", "any_previous_work",
-               "previous_sentences", "sentence_length", "drug_depabuse", "anyprison")
+name_vars = c("age", "h_school", "nchildren", "any_previous_work", "first_time_prison", 
+               "previous_sentences", "sentence_length", "drug_depabuse", "anyprison", 
+                "hardship", "kid_minors", "shealth")
 
 label_vars = c("Age", "High school", "Number of children", "Worked before prison",
+                "First time in prison", 
                 "Number of previous sentences", "Sentence length in months",
-                "Dependence / abuse of drugs", "Prison during follow-up")
+                "Dependence / abuse of drugs", "Prison during follow-up", 
+                "Economic hardship (first week)", "Children under 18", 
+                "Self-reported health status")
 
 dict_vars = hash(name_vars, label_vars)
 rest[, Variable := values(dict_vars, rest[["Variable"]])]
@@ -187,25 +193,24 @@ file.copy(paste0(path_paper, "output/tables/discrepancy_job.tex"),
 
 # job and crime
 st = seqtree(seq_data_job_crime ~ age + h_school +
-    any_previous_work + nchildren +
-    previous_sentences +
-    drug_depabuse +
-    sentence_length + anyprison,
+    any_previous_work + work_hardness + nchildren + previous_sentences +
+    drug_depabuse + sentence_length + anyprison + shealth + hardship + 
+    kid_minors + first_time_prison,
     data = dat, R = 10000, diss = seq_data_job_crime_distance,
     weight.permutation = "diss",
     min.size = 0.05,
     max.depth = 5)
 
-seqtreedisplay(st, type = "d", border = NA,
-    sortv = "from.start",
-    filename = paste0(path_paper, "output/plots/reg_tree_job_crime.png"))
-file.copy(paste0(path_paper, "output/plots/reg_tree_job_crime.png"),
+seqtreedisplay(st, type = "d", border = NA,  image.format = "pdf",
+    filename = paste0(path_paper, "output/plots/reg_tree_job_crime.pdf"))
+file.copy(paste0(path_paper, "output/plots/reg_tree_job_crime.pdf"),
     paste0(path_manuscript, "figures/"), recursive = TRUE)
 
 # multifactor table
 jobcrime.mfac = dissmfacw(seq_data_job_crime_distance ~ age + h_school +
-                          any_previous_work + nchildren +
-                          previous_sentences +
+                          any_previous_work + first_time_prison+
+                          previous_sentences + hardship + shealth + 
+                          kid_minors +
                           drug_depabuse + sentence_length +
                           anyprison,
                      data = dat, R = 1000)
@@ -215,12 +220,16 @@ tt = data.table(jobcrime.mfac$mfac[order(-jobcrime.mfac$mfac$PseudoR2), ])
 total = tt[Variable == "Total"]
 rest = tt[Variable != "Total"]
 
-name_vars = c("age", "h_school", "nchildren", "any_previous_work",
-               "previous_sentences", "sentence_length", "drug_depabuse", "anyprison")
+name_vars = c("age", "h_school", "nchildren", "any_previous_work", "first_time_prison", 
+               "previous_sentences", "sentence_length", "drug_depabuse", "anyprison", 
+                "hardship", "kid_minors", "shealth")
 
 label_vars = c("Age", "High school", "Number of children", "Worked before prison",
+                "First time in prison", 
                 "Number of previous sentences", "Sentence length in months",
-                "Dependence / abuse of drugs", "Prison during follow-up")
+                "Dependence / abuse of drugs", "Prison during follow-up", 
+                "Economic hardship (first week)", "Children under 18", 
+                "Self-reported health status")
 
 dict_vars = hash(name_vars, label_vars)
 rest[, Variable := values(dict_vars, rest[["Variable"]])]
@@ -251,3 +260,4 @@ cat(ptab, file = paste0(path_paper, "output/tables/discrepancy_job_crime.tex"))
 
 file.copy(paste0(path_paper, "output/tables/discrepancy_job_crime.tex"),
     paste0(path_manuscript, "tables/"), recursive = TRUE)
+

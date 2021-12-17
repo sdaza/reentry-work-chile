@@ -10,7 +10,7 @@ library(lubridate)
 library(haven)
 
 # relative directory of the paper
-path_paper = "reports/paper-work-lifecourse/"
+path_paper = "reports/paper-work-crime/"
 source(paste0(path_paper, "src/utils.R"))
 
 # pre-incarceration job
@@ -34,13 +34,13 @@ jobs[, prejobs := factor(prejobs, levels = 0:3, labs)]
 table(jobs$prejobs)
 
 # baseline variables
-bs = fread('output/bases/base_general.csv')
+bs = fread('output/bases/base_general_v0_2.csv')
 setnames(bs, names(bs), tolower(names(bs)))
 bs = bs[reg_ola == 0 & reg_muestra == 1]
 bs = bs[, lapply(.SD, function(x) ifelse(x < 0, NA, x)), .SDcols = names(bs)]
 
 # add  latent classes
-lclass  = fread('data/clases_latentes.csv')
+lclass  = fread('output/bases/research/clases_latentes.csv')
 nvars = c('reg_folio', 'prob1', 'prob2', 'prob3', 'probmax', 'class')
 setnames(lclass, names(lclass), nvars)
 lclass = lclass[, .(reg_folio, class)]
@@ -122,6 +122,9 @@ table(bs$crime)
 # previous sentences
 setnames(bs, 'del_5_1', 'previous_sentences')
 bs[is.na(previous_sentences) & del_4 == 0, previous_sentences := 0]
+table(bs$previous_sentences)
+bs[, first_time_prison := ifelse(previous_sentences == 0, 1, 0)]
+table(bs$first_time_prison)
 
 # time in prison (months)
 table(bs$del_6_1) # months
@@ -143,9 +146,38 @@ bs[, mental_health := scale(apply(.SD, 1, mean, na.rm = TRUE)),
 setnames(bs, 'hij_1', 'nchildren')
 bs[, any_children := ifelse(nchildren > 0, 1, 0)]
 
+h = fread('output/bases/roster_hijos_v0_2.csv')
+table(h$h_num_hijos_menores)
+h[, .(reg_ola, reg_folio, h_hijos, h_correlativo, h_4, h_num_hijos_menores, h_num_hijos, h_viviran_juntos_menores)]
+table(h$reg_folio == 10003)
+
+table(h$h_hijos)
+
+h[, h_num_hijos_menores := ifelse(h_num_hijos_menores < 0, NA, h_num_hijos_menores)]
+h[, viviran_juntos := ifelse(h_viviran_juntos_menores == 2, 1, 0)]
+h[, h_num_hijos_menores := as.numeric(h_num_hijos_menores)]
+
+th = h[, .(menores = getMax(h_num_hijos_menores), 
+    hijos = getMax(h_hijos), 
+    juntos = getMax(viviran_juntos)), reg_folio]
+th[hijos == 0 & is.na(menores), menores := 0]
+
+table(th$menores)
+th[, kid_minors_together:= ifelse(menores > 0 & juntos == 1, 1, 0)]
+th[, kid_minors := ifelse(menores > 0, 1, 0)]
+table(th$kid_minors_together)
+
+nrow(bs)
+bs = merge(bs, th[, .(reg_folio, kid_minors)], by = "reg_folio", all.x = TRUE)
+nrow(bs)
+
 # early crime
 bs[, early_crime := ifelse(del_15 <= 15, 1, 0)]
 table(bs$early_crime)
+
+# self-reported health 
+bs[, shealth := reverse(sal_1)]
+table(bs$shealth)
 
 # last sentence extension
 bs[, del_11_2 := del_11_2 / 12]
@@ -202,21 +234,36 @@ bs[, c(fconflict) := lapply(.SD, reverse),
 bs[, family_conflict := scale(apply(.SD, 1, mean, na.rm = TRUE)),
     .SDcols = c(fconflict)]
 
+# hardship first week 
+d1s = fread('data/180829_1_primerasemana.csv')
+setnames(d1s, names(d1s), tolower(names(d1s)))
+setnames(d1s, "folio2", "reg_folio")
+vars = lookvar(d1s, "p5_[4-6]")
+d1s[, (vars) := lapply(.SD, function(x) ifelse(x < 0, NA, x)), 
+    .SDcols = vars]
+d1s[, (vars) := lapply(.SD, function(x) x-1), 
+    .SDcols = vars]
+d1s[, hardship := apply(.SD, 1, sumValues), .SDcols = vars]
+table(d1s$hardship)
+
+bs = merge(bs, d1s[, .(reg_folio, hardship)], by = "reg_folio", all.x = TRUE)
+
 # select columns
 bs = bs[, .(reg_folio, class, age, edu,
             only_primary, h_school, any_previous_work, 
             work_importance, work_hardness,
-            nchildren, any_children, crime, early_crime,
+            nchildren, any_children, kid_minors, crime, early_crime,
             self_efficacy, desire_change, previous_partner,
-            previous_sentences, mental_health,
+            first_time_prison,
+            previous_sentences, shealth, mental_health,
             drug_depabuse, sentence_length,
-            family_conflict
+            family_conflict, hardship
     )]
 
 # center variables
 bs = merge(bs, jobs, by = "reg_folio", x.all = TRUE)
 cvars = c('age', 'sentence_length', 'nchildren', 'previous_sentences')
-bs[, paste0('c_', cvars) := lapply(.SD, scale, scale=FALSE), .SDcols = cvars]
+bs[, paste0('c_', cvars) := lapply(.SD, scale, scale = FALSE), .SDcols = cvars]
 
 # save data.table
 saveRDS(bs, file = paste0(path_paper, "output/data/baseline_covariates.rds"))

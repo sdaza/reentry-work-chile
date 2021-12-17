@@ -18,8 +18,8 @@ library(xtable)
 set.seed(210013)
 
 # relative directory of the paper
-path_paper = "reports/paper-work-lifecourse/"
-path_manuscript = "reports/paper-work-lifecourse/manuscript/"
+path_paper = "reports/paper-work-crime/"
+path_manuscript = "reports/paper-work-crime/manuscript/"
 source(paste0(path_paper, "src/utils.R"))
 source("src/calendario/utils.R")
 
@@ -62,14 +62,17 @@ seq_data_jobs = create_sequences(
 seqstatd(seq_data_jobs)
 seqmeant(seq_data_jobs, prop = TRUE, serr = TRUE)
 
-savepdf(paste0(path_paper, "output/plots/seq_dist_jobs"))
-    seqdplot(seq_data_jobs,
-        with.legend = FALSE, ltext = labs)
-        mtext(side = 1, line = 2.3, "Months", font = 1, cex = 1)
-        legend(1.1, 1.08, legend = labs, cex = 0.7, pch = 15, col = colors5,
-        horiz = TRUE,  bty = "n", inset = c(0, 2), xpd = TRUE,
-        text.width=c(0,0.7,1.3,1.5,1.5))
-dev.off()
+# savepdf(paste0(path_paper, "output/plots/seq_dist_jobs"))
+#     seqdplot(seq_data_jobs,
+#         with.legend = FALSE, ltext = labs)
+#         mtext(side = 1, line = 2.3, "Months", font = 1, cex = 1)
+#         legend(1.1, 1.08, legend = labs, cex = 1.0, pch = 15, col = colors5,
+#         horiz = TRUE,  bty = "n", inset = c(0, 2), xpd = TRUE,
+#         text.width=c(0,0.7,1.3,1.5,1.5))
+# dev.off()
+
+create_plots_total(seq_data_jobs, width_text = 0.14,
+    filePath = paste0(path_paper, "output/plots/seq_dist_jobs"))
 file.copy(paste0(path_paper, "output/plots/seq_dist_jobs.pdf"),
     paste0(path_manuscript, "figures/"), recursive = TRUE)
 
@@ -206,11 +209,14 @@ cl_jobs_se_4 = create_clusters(seq_data_jobs_se, nclusters = 4,
 cluster_vector = cl_jobs_se_4[["c4"]][[1]]
 n_clusters = c(n, table(cluster_vector))
 
-create_plots(seq_data_jobs_se, cl_jobs_se_4[[1]],
-    paste0(path_paper, "output/plots/seq_job_se_4_clusters"),
-    order = "sql"
+# create_plots(seq_data_jobs_se, cl_jobs_se_4[[1]],
+#     paste0(path_paper, "output/plots/seq_job_se_4_clusters"),
+# )
+
+create_plots_by_group(seq_data_jobs_se, cluster_vector,
+    paste0(path_paper, "output/plots/seq_job_se_4_clusters_t")
 )
-file.copy(paste0(path_paper, "output/plots/seq_job_se_4_clusters.pdf"),
+file.copy(paste0(path_paper, "output/plots/seq_job_se_4_clusters_t.pdf"),
     paste0(path_manuscript, "figures/"), recursive = TRUE)
 
 cluster_membership[, cluster_job_4 := cluster_vector]
@@ -221,13 +227,18 @@ slabels =  c("None", "Self-employed", "Under-the-table", "Formal")
 glabels = c("Unemployed", "Self-employed", "Under-the-table", "Formal")
 table(cluster_vector)
 
-des_vars = c("age", "h_school", "nchildren", "drug_depabuse", "early_crime", 
-    "previous_sentences", "sentence_length", "any_previous_work", "work_hardness", 
+des_vars = c("age", "h_school", "kid_minors", "nchildren", "drug_depabuse", "shealth", 
+    "early_crime", 
+    "first_time_prison", "previous_sentences", "sentence_length", 
+    "any_previous_work", "work_hardness", "hardship", 
     "anyjobsearch", "anyprison")
-des_labs = c("Age", "High school", "Num. of children", "Dependence / drug abuse", 
-    "Crime before age 15", "Num. previous sentences", "Sentence length", "Worked before prison", 
-    "Expected hardness of finding job",
-    "Searched jobs during follow-up", "Prison during follow-up")
+des_labs = c("Age", "High school", "Children under 18", "Num. of children", "Dependence / drug abuse", 
+    "Self-reported health status", 
+    "Crime before age 15", "First time in prison", "Num. previous sentences", "Sentence length", 
+    "Worked before prison", 
+    "Expected hardness of finding job", "Economic hardship(first week)",
+    "Searched jobs during follow-up", 
+    "Prison during follow-up")
 descriptives = list()
 for (i in seq_along(des_vars)) {
     myformat = ifelse(des_vars[i] == "age", "%#.1f", "%#.2f")
@@ -370,19 +381,6 @@ seq_data_job_crime = create_sequences(data = dat,
     colors = colors8[1:6]
 )
 
-savepdf(paste0(path_paper, "output/plots/seq_dist_job_crime"),
-    mar = c(3.3,3.6,2.5,1.1), mgp = c(2.7,0.45,0))
-    seqdplot(seq_data_job_crime,
-        with.legend = FALSE, ltext = labs)
-    mtext(side = 1, line = 2.3, "Months", font = 1, cex = 1)
-    legend(3, 1.15, legend = labs, cex = 0.7, pch = 15, col = colors8[1:6],
-        ncol = 3, bty = "n", inset = c(0, 1), xpd = TRUE,
-        text.width = c(0,0.7,0.7,0.7,1.2, 1.2)
-        )
-dev.off()
-file.copy(paste0(path_paper, "output/plots/seq_dist_job_crime.pdf"),
-    paste0(path_manuscript, "figures/"), recursive = TRUE)
-
 seqstatf(seq_data_job_crime)
 seqstatd(seq_data_job_crime)
 seqmeant(seq_data_job_crime)
@@ -426,6 +424,11 @@ cl_job_crime_4 = create_clusters(seq_data_job_crime,
 )
 cluster_vector = cl_job_crime_4[["c4"]][[1]]
 
+create_plots_total(seq_data_job_crime, width_text = 0.12,
+    filePath = paste0(path_paper, "output/plots/seq_dist_job_crime"))
+file.copy(paste0(path_paper, "output/plots/seq_dist_job_crime.pdf"),
+    paste0(path_manuscript, "figures/"), recursive = TRUE)
+
 vorder = table(cluster_vector)
 cluster_labels_job_crime = c(NA, NA, NA, NA)
 cluster_labels_job_crime[which(vorder == min(vorder))] = "Formal"
@@ -450,19 +453,18 @@ cl_job_crime_4 = create_clusters(seq_data_job_crime,
 cluster_vector = cl_job_crime_4[["c4"]][[1]]
 n_clusters = c(n, table(cluster_vector))
 
-create_plots(seq_data_job_crime, cl_job_crime_4[[1]],
-    paste0(path_paper, "output/plots/seq_job_crime_4_clusters"),
-    order = "sql")
-file.copy(paste0(path_paper, "output/plots/seq_job_crime_4_clusters.pdf"),
-    paste0(path_manuscript, "figures/"), recursive = TRUE)
-cluster_membership[, cluster_job_crime_4 := cluster_vector]
-
-# explore clusters 
-select_cluster = "Formal"
-temp = data.table(
-    by(seq_data_job_crime,
-        cluster_membership$cluster_job_crime_4, seqistatd)[[select_cluster]]
+create_plots_by_group(seq_data_job_crime, cluster_vector,
+    paste0(path_paper, "output/plots/seq_job_crime_4_clusters_t")
 )
+file.copy(paste0(path_paper, "output/plots/seq_job_crime_4_clusters_t.pdf"),
+    paste0(path_manuscript, "figures/"), recursive = TRUE)
+
+# create_plots(seq_data_job_crime, cl_job_crime_4[[1]],
+#     paste0(path_paper, "output/plots/seq_job_crime_4_clusters"),
+#     order = "sql")
+# file.copy(paste0(path_paper, "output/plots/seq_job_crime_4_clusters.pdf"),
+#     paste0(path_manuscript, "figures/"), recursive = TRUE)
+# cluster_membership[, cluster_job_crime_4 := cluster_vector]
 
 # create table with stats across clusters ::::::::::::::::
 cluster_vector = cl_job_crime_4[["c4"]][[1]]

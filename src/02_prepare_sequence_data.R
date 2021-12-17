@@ -5,14 +5,13 @@ library(WeightedCluster)
 library(TraMineR)
 library(TraMineRextras)
 library(xtable)
-library(msm)
 
 # set seed to reproduce imputation
 set.seed(210013)
 
 # relative directory of the paper
-path_paper = "reports/paper-work-lifecourse/"
-path_manuscript = "reports/paper-work-lifecourse/manuscript/"
+path_paper = "reports/paper-work-crime/"
+path_manuscript = "reports/paper-work-crime/manuscript/"
 
 source(paste0(path_paper, "src/utils.R"))
 source("src/calendario/utils.R")
@@ -31,13 +30,14 @@ covs = merge(covs, cal_covs, by = "reg_folio")
 
 # read calendar data and pilar's classes
 dat = readRDS(paste0(path_paper, "output/data/job_calendar.rds"))
-class = fread("data/clases_latentes.csv")
+class = fread("output/bases/research/clases_latentes.csv")
 setnames(class, c("FOLIO_2", "predclass3G"),
          c("reg_folio", "class"))
 
 dat = dat[reg_muestra == 1][!reg_folio %in% all_missing_ids]
 dat = merge(dat, class[, .(reg_folio, class)],
             by = "reg_folio", x.all = TRUE)
+# haven::write_dta(dat, "output/bases/research/calendario_trabajo.dta")
 
 n = length(unique(dat$reg_folio))
 print(paste0("Number of valid cases: ", n))
@@ -47,7 +47,7 @@ table(dat[month_index == 12, days_month])
 ids = dat[month_index == 12 & days_month == 0, reg_folio]
 
 wave_summary = createWaveSummary(
-    path_to_data = "output/bases/base_general_wide.csv")
+    path_to_data = "output/bases/base_general_wide_v0_2.csv")
 
 table(wave_summary[reg_folio %in% ids & wave == 4, sequence_waves])
 table(wave_summary[sequence_waves %in% c("001", "011", "101", "111") &

@@ -85,6 +85,11 @@ getMin = function(x) {
 }
 
 
+sumValues = function(x) {
+    if (all(is.na(x))) { return(NA)}
+    else { return(sum(x, na.rm = TRUE))}
+}
+
 table = function (...) base::table(..., useNA = 'ifany')
 
 
@@ -195,6 +200,65 @@ create_clusters = function(seq_data, method = "HAM", norm_distance = "auto",
 }
 
 
+create_plots_by_group = function(seq_data, cl, filePath, order = "from.start") {
+
+    clusters = sort(unique(cl))
+    labs = attr(seq_data,"labels")
+    cpal = attr(seq_data,"cpal")
+    savepdf(filePath, 16, 25)
+    par(mfrow=c(length(clusters),2), oma=c(1,1,1,1), mar=c(2,2,5,2))
+
+    for (i in clusters) {
+        ind = which(cl == i)
+        seqsubset = seq_data[ind,]
+        seqdplot(seqsubset, border=NA,  
+            with.legend = FALSE)
+            mtext(side = 1, line = 2.0, "Months", font = 1, cex = 0.8)
+            title(paste0(i,  " (n = ", length(ind), ")"), adj = 0.5, line = 0.55)
+        seqIplot(seqsubset, border=NA, 
+            sortv = order, with.legend = FALSE)
+            mtext(side = 1, line = 2.0, "Months", font = 1, cex = 0.8)
+            title(paste0(i,  " (n = ", length(ind), ")"), adj = 0.5, line = 0.2)
+    }
+    reset <- function() {
+        par(mfrow=c(1, 1), oma=rep(0, 4), mar=rep(0, 4), new=TRUE)
+        plot(0:1, 0:1, type="n", xlab="", ylab="", axes=FALSE)
+    }
+    reset()
+    legend("top", legend = labs, cex = 0.8, fill = cpal, border = "grey", 
+        ncol = length(labs), bty="n")
+    dev.off()
+}
+
+
+create_plots_total = function(seq_data, filePath,  width_text = 0.20) {
+
+    labs = attr(seq_data,"labels")
+    cpal = attr(seq_data,"cpal")
+    savepdf(filePath, 16, 25)
+    par(mfrow=c(2, 1), oma=c(1,1,1,1), mar=c(2,2,3.5,2))
+
+
+    seqdplot(seq_data, border=NA,  
+            with.legend = FALSE)
+            mtext(side = 1, line = 2.3, "Months", font = 1, cex = 0.8)
+            title("Distribution", adj = 0.5, line = 0.5)
+    seqIplot(seq_data, border=NA, 
+            sortv = "from.start", with.legend = FALSE)
+            mtext(side = 1, line = 2.0, "Months", font = 1, cex = 0.8)
+            title("Sequences", adj = 0.5, line = 0.2)
+    reset <- function() {
+        par(mfrow=c(1, 1), oma=rep(0, 4), mar=rep(0, 4), new=TRUE)
+        plot(0:1, 0:1, type="n", xlab="", ylab="", axes=FALSE)
+    }
+    reset()
+    legend("top", legend = labs, cex = 0.8, fill = cpal, border = "grey", 
+        ncol = length(labs), bty="n", text.width = width_text)
+    dev.off()
+}
+
+
+
 create_plots = function(seq_data,
                         cl,
                         filepath,
@@ -206,7 +270,12 @@ create_plots = function(seq_data,
 
     clusters = cl[[1]]
 
-    savepdf(filepath)
+    seqdplot(seq_data, main = "Testing", with.legend = FALSE)
+    seqIplot(seq_data, sortv = "from.start", with.legend = FALSE)
+    legend(1.1, 1.08, legend = attr(seq_data,"labels"), cex = 0.5, pch = 15, col = colors5,
+    horiz = TRUE,  bty = "n", inset = c(0, 2), xpd = TRUE,
+    text.width=c(0,0.7,1.3,1.5,1.5))
+    mtext(side = 1, line = 2.3, "Months", font = 1, cex = 0.8)
 
     ifelse(order == "from.start",
         seqIplot(seq_data, group = group.p(clusters), sortv = "from.start"),
